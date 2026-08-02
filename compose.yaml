@@ -1,0 +1,9 @@
+services:
+  localstack:
+    image: localstack/localstack:stable
+    container_name: secure-api-localstack
+    ports:
+      - "127.0.0.1:4566:4566"
+    environment:
+      SERVICES: s3
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN}
