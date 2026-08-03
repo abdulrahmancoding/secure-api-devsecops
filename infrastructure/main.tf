@@ -19,6 +19,7 @@ provider "aws" {
   skip_requesting_account_id  = true
 
   endpoints {
+    iam = "http://localhost:4566"
     kms = "http://localhost:4566"
     s3  = "http://localhost:4566"
   }
@@ -92,4 +93,80 @@ data "aws_iam_policy_document" "artifacts_https_only" {
 resource "aws_s3_bucket_policy" "artifacts_https_only" {
   bucket = aws_s3_bucket.artifacts.id
   policy = data.aws_iam_policy_document.artifacts_https_only.json
+}
+data "aws_iam_policy_document" "api_permissions" {
+  statement {
+    sid    = "ListArtifactBucket"
+    effect = "Allow"
+
+    actions = [
+      "s3:ListBucket"
+    ]
+
+    resources = [
+      aws_s3_bucket.artifacts.arn
+    ]
+  }
+
+  statement {
+    sid    = "UploadArtifacts"
+    effect = "Allow"
+
+    actions = [
+      "s3:PutObject"
+    ]
+
+    resources = [
+      "${aws_s3_bucket.artifacts.arn}/*"
+    ]
+  }
+
+  statement {
+    sid    = "UseArtifactEncryptionKey"
+    effect = "Allow"
+
+    actions = [
+      "kms:DescribeKey",
+      "kms:Encrypt",
+      "kms:GenerateDataKey"
+    ]
+
+    resources = [
+      aws_kms_key.artifacts.arn
+    ]
+  }
+}
+
+resource "aws_iam_policy" "api_permissions" {
+  name        = "secure-api-least-privilege"
+  description = "Allows the API to list and upload encrypted artifacts only"
+  policy      = data.aws_iam_policy_document.api_permissions.json
+}
+data "aws_iam_policy_document" "api_assume_role" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sts:AssumeRole"
+    ]
+
+    principals {
+      type = "Service"
+
+      identifiers = [
+        "ecs-tasks.amazonaws.com"
+      ]
+    }
+  }
+}
+
+resource "aws_iam_role" "api" {
+  name               = "secure-api-role"
+  description        = "Least-privilege role for the secure API"
+  assume_role_policy = data.aws_iam_policy_document.api_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "api" {
+  role       = aws_iam_role.api.name
+  policy_arn = aws_iam_policy.api_permissions.arn
 }
