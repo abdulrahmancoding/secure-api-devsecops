@@ -8,6 +8,7 @@ terraform {
     }
   }
 }
+
 provider "aws" {
   access_key                  = "test"
   secret_key                  = "test"
@@ -18,12 +19,21 @@ provider "aws" {
   skip_requesting_account_id  = true
 
   endpoints {
-    s3 = "http://localhost:4566"
+    kms = "http://localhost:4566"
+    s3  = "http://localhost:4566"
   }
 }
+
 resource "aws_s3_bucket" "artifacts" {
   bucket = "secure-api-artifacts-local"
 }
+
+resource "aws_kms_key" "artifacts" {
+  description             = "Encryption key for secure API artifacts"
+  enable_key_rotation     = true
+  deletion_window_in_days = 7
+}
+
 resource "aws_s3_bucket_public_access_block" "artifacts" {
   bucket = aws_s3_bucket.artifacts.id
 
@@ -32,15 +42,20 @@ resource "aws_s3_bucket_public_access_block" "artifacts" {
   block_public_policy     = true
   restrict_public_buckets = true
 }
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
   bucket = aws_s3_bucket.artifacts.id
 
   rule {
+    bucket_key_enabled = true
+
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      kms_master_key_id = aws_kms_key.artifacts.arn
+      sse_algorithm     = "aws:kms"
     }
   }
 }
+
 resource "aws_s3_bucket_versioning" "artifacts" {
   bucket = aws_s3_bucket.artifacts.id
 
@@ -48,6 +63,7 @@ resource "aws_s3_bucket_versioning" "artifacts" {
     status = "Enabled"
   }
 }
+
 data "aws_iam_policy_document" "artifacts_https_only" {
   statement {
     sid    = "DenyInsecureTransport"

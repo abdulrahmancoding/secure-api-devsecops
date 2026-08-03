@@ -5,5 +5,5 @@ services:
     ports:
       - "127.0.0.1:4566:4566"
     environment:
-      SERVICES: s3
+      SERVICES: s3,kms
       LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN}
