@@ -46,3 +46,35 @@ jobs:
           ignore-unfixed: true
           vuln-type: os,library
           severity: CRITICAL,HIGH
+
+  infrastructure:
+    name: Validate and scan Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.15.8"
+
+      - name: Check Terraform formatting
+        run: terraform -chdir=infrastructure fmt -check
+
+      - name: Initialize Terraform
+        run: terraform -chdir=infrastructure init -backend=false -input=false
+
+      - name: Validate Terraform
+        run: terraform -chdir=infrastructure validate -no-color
+
+      - name: Scan Terraform configuration
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: infrastructure
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
