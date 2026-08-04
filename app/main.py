@@ -1,14 +1,15 @@
 from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Security
 from pydantic import BaseModel, Field
 
+from app.security import require_api_key
 from app.storage import list_artifacts, upload_artifact
 
 
 app = FastAPI(
     title="Secure API",
     description="A containerized API for learning DevSecOps practices.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 
@@ -26,7 +27,11 @@ def health_check() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-@app.post("/artifacts", status_code=201)
+@app.post(
+    "/artifacts",
+    status_code=201,
+    dependencies=[Security(require_api_key)],
+)
 def create_artifact(artifact: ArtifactCreate) -> dict[str, str]:
     try:
         upload_artifact(artifact.name, artifact.content)
@@ -42,7 +47,10 @@ def create_artifact(artifact: ArtifactCreate) -> dict[str, str]:
     }
 
 
-@app.get("/artifacts")
+@app.get(
+    "/artifacts",
+    dependencies=[Security(require_api_key)],
+)
 def get_artifacts() -> dict[str, list[str]]:
     try:
         names = list_artifacts()
