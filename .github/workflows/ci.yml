@@ -79,7 +79,7 @@ jobs:
           exit-code: "1"
           severity: CRITICAL,HIGH
 
-            integration-test:
+  integration-test:
     name: Test API with LocalStack
     needs:
       - test
