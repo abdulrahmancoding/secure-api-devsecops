@@ -18,12 +18,16 @@ client = TestClient(app)
 def test_artifact_storage_with_localstack() -> None:
     artifact_name = f"integration-{uuid4().hex}.txt"
     artifact_content = "Integration test successfully reached encrypted S3."
+    auth_headers = {
+        "X-API-Key": os.environ["API_KEY"],
+    }
 
     s3_client = get_s3_client()
 
     try:
         upload_response = client.post(
             "/artifacts",
+            headers=auth_headers,
             json={
                 "name": artifact_name,
                 "content": artifact_content,
@@ -36,7 +40,10 @@ def test_artifact_storage_with_localstack() -> None:
             "status": "stored",
         }
 
-        list_response = client.get("/artifacts")
+        list_response = client.get(
+            "/artifacts",
+            headers=auth_headers,
+        )
 
         assert list_response.status_code == 200
         assert artifact_name in list_response.json()["artifacts"]

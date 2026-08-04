@@ -90,6 +90,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: test
       AWS_DEFAULT_REGION: us-east-1
       AWS_REGION: us-east-1
+      API_KEY: ${{ secrets.API_KEY }}
       RUN_INTEGRATION_TESTS: "1"
       TF_IN_AUTOMATION: "true"
 
